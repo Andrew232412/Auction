@@ -1,31 +1,23 @@
 from datetime import datetime
 from typing import Optional
 from enum import Enum
-from pydantic import BaseModel, Field
+
 from bson import ObjectId
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from .objectid import coerce_object_id
+
 
 class AuctionStatus(str, Enum):
     ACTIVE = "active"
     CLOSED = "closed"
     CANCELLED = "cancelled"
 
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
-
-    @classmethod
-    def __get_pydantic_json_schema__(cls, field_schema):
-        field_schema.update(type="string")
 
 class Auction(BaseModel):
-    id: Optional[PyObjectId] = Field(default=None, alias="_id")
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
     title: str
     description: str
     category: str
@@ -37,10 +29,11 @@ class Auction(BaseModel):
     status: AuctionStatus = AuctionStatus.ACTIVE
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: object) -> ObjectId | None:
+        return coerce_object_id(v)
+
 
 class AuctionCreate(BaseModel):
     title: str
@@ -50,6 +43,7 @@ class AuctionCreate(BaseModel):
     start_date: datetime
     end_date: datetime
 
+
 class AuctionUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
@@ -57,6 +51,7 @@ class AuctionUpdate(BaseModel):
     starting_price: Optional[float] = Field(default=None, gt=0)
     end_date: Optional[datetime] = None
     status: Optional[AuctionStatus] = None
+
 
 class AuctionResponse(BaseModel):
     id: str
@@ -71,5 +66,4 @@ class AuctionResponse(BaseModel):
     status: AuctionStatus
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

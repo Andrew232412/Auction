@@ -137,7 +137,12 @@ const Register: React.FC = () => {
       });
       navigate('/login');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      const data = err.response?.data;
+      let message = data?.detail || data?.message;
+      if (Array.isArray(message)) {
+        message = message.map((m: any) => m?.msg).filter(Boolean).join(', ');
+      }
+      setError(message || 'Registration failed. Please check your input.');
     } finally {
       setLoading(false);
     }

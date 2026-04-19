@@ -127,13 +127,13 @@ const SubmitButton = styled.button`
 const ErrorMessage = styled.div`
   color: #f44336;
   font-size: 14px;
-  margin-top: 10px;
+  margin: 10px 0 15px 0;
 `;
 
 const SuccessMessage = styled.div`
   color: #4caf50;
   font-size: 14px;
-  margin-top: 10px;
+  margin: 10px 0 15px 0;
 `;
 
 const InfoBox = styled.div`
@@ -248,7 +248,12 @@ const AuctionDetail: React.FC = () => {
       fetchAuction();
       fetchBids();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to place bid');
+      const data = err.response?.data;
+      let message = data?.detail || data?.message;
+      if (Array.isArray(message)) {
+        message = message.map((m: any) => m?.msg).filter(Boolean).join(', ');
+      }
+      setError(message || 'Failed to place bid');
     }
   };
 

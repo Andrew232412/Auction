@@ -113,6 +113,7 @@ const AuctionPrice = styled.div`
 
 const StatusBadge = styled.span<{ status: string }>`
   display: inline-block;
+  margin-top: 10px;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
@@ -126,6 +127,12 @@ const StatusBadge = styled.span<{ status: string }>`
     }
   }};
   color: white;
+`;
+
+const EndsDate = styled.p`
+  color: #666;
+  font-size: 14px;
+  margin: 4px 0 0 0;
 `;
 
 const Pagination = styled.div`
@@ -189,7 +196,9 @@ interface Filters {
 const AuctionList: React.FC = () => {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [initialized, setInitialized] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [categoryInput, setCategoryInput] = useState<string>('');
   const [filters, setFilters] = useState<Filters>({
     category: '',
     status: '',
@@ -202,6 +211,16 @@ const AuctionList: React.FC = () => {
     pages: 0,
   });
   const navigate = useNavigate();
+
+  // Debounce category input so typing does not re-fetch on every keystroke.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setFilters((prev) =>
+        prev.category === categoryInput ? prev : { ...prev, category: categoryInput, page: 1 }
+      );
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [categoryInput]);
 
   useEffect(() => {
     fetchAuctions();
@@ -227,15 +246,20 @@ const AuctionList: React.FC = () => {
       setError('Failed to load auctions');
     } finally {
       setLoading(false);
+      setInitialized(true);
     }
   };
 
-  const handleFilterChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setFilters({
       ...filters,
       [e.target.name]: e.target.value,
       page: 1,
     });
+  };
+
+  const handleCategoryChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setCategoryInput(e.target.value);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -249,7 +273,7 @@ const AuctionList: React.FC = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  if (loading && auctions.length === 0) {
+  if (!initialized && loading) {
     return <Loading>Loading auctions...</Loading>;
   }
 
@@ -265,13 +289,13 @@ const AuctionList: React.FC = () => {
               type="text"
               name="category"
               placeholder="Filter by category"
-              value={filters.category}
-              onChange={handleFilterChange}
+              value={categoryInput}
+              onChange={handleCategoryChange}
             />
           </FilterGroup>
           <FilterGroup>
             <Label>Status</Label>
-            <Select name="status" value={filters.status} onChange={handleFilterChange}>
+            <Select name="status" value={filters.status} onChange={handleSelectChange}>
               <option value="">All</option>
               <option value="active">Active</option>
               <option value="closed">Closed</option>
@@ -280,7 +304,7 @@ const AuctionList: React.FC = () => {
           </FilterGroup>
           <FilterGroup>
             <Label>Sort By</Label>
-            <Select name="sort_by" value={filters.sort_by} onChange={handleFilterChange}>
+            <Select name="sort_by" value={filters.sort_by} onChange={handleSelectChange}>
               <option value="created_at">Newest</option>
               <option value="current_price">Price</option>
               <option value="end_date">Ending Soon</option>
@@ -304,9 +328,7 @@ const AuctionList: React.FC = () => {
               {auction.description.substring(0, 100)}...
             </AuctionDescription>
             <AuctionPrice>${auction.current_price}</AuctionPrice>
-            <p style={{ color: '#666', fontSize: '14px' }}>
-              Ends: {formatDate(auction.end_date)}
-            </p>
+            <EndsDate>Ends: {formatDate(auction.end_date)}</EndsDate>
             <StatusBadge status={auction.status}>
               {auction.status}
             </StatusBadge>

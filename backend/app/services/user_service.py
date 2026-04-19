@@ -12,8 +12,9 @@ class UserService:
         self.user_repository = user_repository
     
     def _hash_password(self, password: str) -> str:
+        # bcrypt limits secret length; pass str (passlib + bcrypt 4.1+ need bcrypt pinned in requirements)
         return pwd_context.hash(password)
-    
+
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return pwd_context.verify(plain_password, hashed_password)
     

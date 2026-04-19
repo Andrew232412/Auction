@@ -1,19 +1,20 @@
-from datetime import datetime, timedelta
+import time
 from typing import Optional, Dict
 from jose import JWTError, jwt
 from ..config import settings
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    to_encode.update({"exp": expire, "type": "access"})
+    # python-jose expects numeric "exp" (Unix seconds), not datetime
+    exp = int(time.time()) + settings.access_token_expire_minutes * 60
+    to_encode.update({"exp": exp, "type": "access"})
     encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
     return encoded_jwt
 
 def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
-    to_encode.update({"exp": expire, "type": "refresh"})
+    exp = int(time.time()) + settings.refresh_token_expire_days * 24 * 60 * 60
+    to_encode.update({"exp": exp, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
     return encoded_jwt
 

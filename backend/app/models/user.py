@@ -1,45 +1,39 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+
 from bson import ObjectId
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+from .objectid import coerce_object_id
 
-    @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
-
-    @classmethod
-    def __get_pydantic_json_schema__(cls, field_schema):
-        field_schema.update(type="string")
 
 class User(BaseModel):
-    id: Optional[PyObjectId] = Field(default=None, alias="_id")
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
     email: EmailStr
     username: str
     password_hash: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: object) -> ObjectId | None:
+        return coerce_object_id(v)
+
 
 class UserCreate(BaseModel):
     email: EmailStr
     username: str
     password: str
 
+
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     username: Optional[str] = None
     password: Optional[str] = None
+
 
 class UserResponse(BaseModel):
     id: str
@@ -48,5 +42,4 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

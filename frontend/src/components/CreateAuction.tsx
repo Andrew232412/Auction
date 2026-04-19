@@ -1,8 +1,8 @@
-import React, { useState, FormEvent, ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { auctionsAPI } from '../services/api';
-import type { AuctionCreate } from '../types';
+import React, { useState, FormEvent, ChangeEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
+import { auctionsAPI } from "../services/api";
+import type { AuctionCreate } from "../types";
 
 const Container = styled.div`
   max-width: 800px;
@@ -97,35 +97,42 @@ const SubmitButton = styled.button`
 
 const CreateAuction: React.FC = () => {
   const [formData, setFormData] = useState<AuctionCreate>({
-    title: '',
-    description: '',
-    category: '',
+    title: "",
+    description: "",
+    category: "",
     starting_price: 0,
-    start_date: '',
-    end_date: '',
+    start_date: "",
+    end_date: "",
   });
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'starting_price' ? parseFloat(value) : value,
+      [name]: name === "starting_price" ? parseFloat(value) : value,
     });
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       const response = await auctionsAPI.createAuction(formData);
       navigate(`/auctions/${response.data.id}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create auction');
+      const data = err.response?.data;
+      let message = data?.detail || data?.message;
+      if (Array.isArray(message)) {
+        message = message.map((m: any) => m?.msg).filter(Boolean).join(", ");
+      }
+      setError(message || "Failed to create auction");
     } finally {
       setLoading(false);
     }
@@ -205,7 +212,7 @@ const CreateAuction: React.FC = () => {
 
           {error && <ErrorMessage>{error}</ErrorMessage>}
           <SubmitButton type="submit" disabled={loading}>
-            {loading ? 'Creating...' : 'Create Auction'}
+            {loading ? "Creating..." : "Create Auction"}
           </SubmitButton>
         </Form>
       </FormCard>

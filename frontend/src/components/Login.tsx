@@ -124,7 +124,12 @@ const Login: React.FC = () => {
       setTokens(access_token, refresh_token);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      const data = err.response?.data;
+      const status = err.response?.status;
+      const fallback = status === 401
+        ? 'Incorrect email or password'
+        : 'Login failed. Please try again.';
+      setError(data?.detail || data?.message || fallback);
     } finally {
       setLoading(false);
     }
