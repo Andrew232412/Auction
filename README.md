@@ -89,10 +89,23 @@ git clone <repository-url>
 cd auction-system
 ```
 
-2. Start all services:
-```bash
-docker-compose up -d
-```
+2. Start all services.
+
+   **First time** (or after pulling code that changed Dockerfiles / dependencies), build images and start containers:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+   On older Docker installs the same command is often `docker-compose up -d --build`.
+
+   The first run can take a few minutes (npm install + production build for the frontend, pip install for the backend). Later, if you did not change Dockerfiles or `package.json` / `requirements.txt`, a plain start is enough:
+
+   ```bash
+   docker compose up -d
+   ```
+
+   Use `--build` again whenever you need fresh images (e.g. dependency or Dockerfile changes).
 
 3. Access the application:
 - Frontend: http://localhost:3000
